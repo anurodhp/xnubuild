@@ -66,7 +66,7 @@ DTRACE_VERSION=dtrace-284.200.15
 AVAILABILITYVERSIONS_VERSION=AvailabilityVersions-33.200.4
 LIBPLATFORM_VERSION=libplatform-177.200.16
 
-SDK_ROOT=`xcodebuild -version -sdk macosx Path`
+SDK_ROOT=`xcodebuild -version -sdk iphoneos Path`
 
 # Wait for user input
 function wait_enter {
@@ -111,7 +111,7 @@ print "Getting dependencies from Apple (if required)"
 	cd $SCRIPT_DIRECTORY && \
 	curl_dependency $DTRACE_VERSION && \
 	curl_dependency $AVAILABILITYVERSIONS_VERSION && \
-	curl_dependency $XNU_VERSION && \
+	# curl_dependency $XNU_VERSION && \
 	curl_dependency $LIBPLATFORM_VERSION && \
 	curl_dependency $LIBDISPATCH_VERSION
 } || {
@@ -119,6 +119,9 @@ print "Getting dependencies from Apple (if required)"
 	exit 1
 }
 wait_enter
+
+git clone https://github.com/anurodhp/xnu.git
+mv xnu $XNU_VERSION
 
 print "Extracting dependencies"
 {
@@ -173,8 +176,8 @@ print "Installing XNU & LibSyscall headers"
 		patch -s -p1 < $PATCH_DIRECTORY/xnu/xnu_dependencies_dir.patch && \
 		patch -s -p1 < $PATCH_DIRECTORY/xnu/bsd-xcconfig.patch && \
 		patch -s -p1 < $PATCH_DIRECTORY/xnu/task_exc_guard_behavior.patch && \
-		DEPENDENCIES_DIR=$BUILD_DIR/dependencies make installhdrs SDKROOT=macosx ARCH_CONFIGS=X86_64 SRCROOT=$PWD OBJROOT=$BUILD_DIR/$XNU_VERSION.hdrs.obj SYMROOT=$BUILD_DIR/$XNU_VERSION.hdrs.sym DSTROOT=$BUILD_DIR/$XNU_VERSION.hdrs.dst && \
-		xcodebuild installhdrs -project libsyscall/Libsyscall.xcodeproj -sdk macosx SRCROOT=$PWD/libsyscall OBJROOT=$BUILD_DIR/$XNU_VERSION.hdrs.obj SYMROOT=$BUILD_DIR/$XNU_VERSION.hdrs.sym DSTROOT=$BUILD_DIR/$XNU_VERSION.hdrs.dst DEPENDENCIES_DIR=$BUILD_DIR/dependencies && \
+		DEPENDENCIES_DIR=$BUILD_DIR/dependencies make installhdrs LOGCOLORS=y SDKROOT=iphoneos ARCH_CONFIGS=ARM64 MACHINE_CONFIGS=BCM2837  ARCH_STRING_FOR_CURRENT_MACHINE_CONFIG=arm64 KERNEL_CONFIGS=RELEASE SRCROOT=$PWD OBJROOT=$BUILD_DIR/$XNU_VERSION.hdrs.obj SYMROOT=$BUILD_DIR/$XNU_VERSION.hdrs.sym DSTROOT=$BUILD_DIR/$XNU_VERSION.hdrs.dst && \
+	echo 	xcodebuild installhdrs -project libsyscall/Libsyscall.xcodeproj -sdk iphoneos SRCROOT=$PWD/libsyscall OBJROOT=$BUILD_DIR/$XNU_VERSION.hdrs.obj SYMROOT=$BUILD_DIR/$XNU_VERSION.hdrs.sym DSTROOT=$BUILD_DIR/$XNU_VERSION.hdrs.dst DEPENDENCIES_DIR=$BUILD_DIR/dependencies && \
 		ditto $BUILD_DIR/$XNU_VERSION.hdrs.dst $BUILD_DIR/dependencies
 } || {
 	error "Failed to build XNU & LibSyscall headers"
@@ -205,7 +208,7 @@ print "Setting up libfirehose"
 	cd $SCRIPT_DIRECTORY/$LIBDISPATCH_VERSION && \
 		patch -s -p1 < $PATCH_DIRECTORY/libfirehose/header-paths.patch && \
 		patch -s -p1 < $PATCH_DIRECTORY/libfirehose/fix-build.patch && \
-		xcodebuild install -project libdispatch.xcodeproj -target libfirehose_kernel -sdk macosx ARCHS='x86_64' SRCROOT=$PWD OBJROOT=$BUILD_DIR/$LIBDISPATCH_VERSION.obj SYMROOT=$BUILD_DIR/$LIBDISPATCH_VERSION.sym DSTROOT=$BUILD_DIR/$LIBDISPATCH_VERSION.dst DEPENDENCIES_DIR=$BUILD_DIR/dependencies && \
+		xcodebuild install -project libdispatch.xcodeproj -target libfirehose_kernel -sdk iphoneos ARCHS='ARM64' ENABLE_BITCODE=no SRCROOT=$PWD OBJROOT=$BUILD_DIR/$LIBDISPATCH_VERSION.obj SYMROOT=$BUILD_DIR/$LIBDISPATCH_VERSION.sym DSTROOT=$BUILD_DIR/$LIBDISPATCH_VERSION.dst DEPENDENCIES_DIR=$BUILD_DIR/dependencies && \
 		ditto $BUILD_DIR/$LIBDISPATCH_VERSION.dst/usr/local $BUILD_DIR/dependencies/usr/local
 } || {
 	error "Failed to setup libfirehose"
@@ -217,9 +220,9 @@ print "Building XNU, sudo password may be required"
 {
 	mkdir -p $BUILD_DIR/$XNU_VERSION.{obj,sym,dst}
 	cd $SCRIPT_DIRECTORY/$XNU_VERSION && \
-		patch -s -p1 < $PATCH_DIRECTORY/xnu/xnu_firehose_dir.patch && \
-		patch -s -p1 < $PATCH_DIRECTORY/xnu/kext_load.patch && \
-		sudo env DEPENDENCIES_DIR=$BUILD_DIR/dependencies make install SDKROOT=macosx ARCH_CONFIGS=X86_64 KERNEL_CONFIGS=RELEASE OBJROOT=$BUILD_DIR/$XNU_VERSION.obj SYMROOT=$BUILD_DIR/$XNU_VERSION.sym DSTROOT=$BUILD_DIR/$XNU_VERSION.dst DEPENDENCIES_DIR=$BUILD_DIR/dependencies BUILD_WERROR=0 BUILD_LTO=0
+	echo	patch -s -p1 < $PATCH_DIRECTORY/xnu/xnu_firehose_dir.patch && \
+	echo 	patch -s -p1 < $PATCH_DIRECTORY/xnu/kext_load.patch && \
+		sudo env DEPENDENCIES_DIR=$BUILD_DIR/dependencies make install SDKROOT=iphoneos ARCH_CONFIGS=ARM64 ARCH_STRING_FOR_CURRENT_MACHINE_CONFIG=arm64 MACHINE_CONFIGS=BCM2837 BUILD_WERROR=0 BUILD_LTO=0KERNEL_CONFIGS=RELEASE OBJROOT=$BUILD_DIR/$XNU_VERSION.obj SYMROOT=$BUILD_DIR/$XNU_VERSION.sym DSTROOT=$BUILD_DIR/$XNU_VERSION.dst DEPENDENCIES_DIR=$BUILD_DIR/dependencies
 } || {
 	error "Failed to build XNU"
 	exit 1
@@ -237,7 +240,7 @@ print "Building Libsyscall, sudo password may be required"
 	cd $SCRIPT_DIRECTORY/$XNU_VERSION && \
 		patch -s -p1 < $PATCH_DIRECTORY/xnu/libsyscall-build.patch && \
 		patch -s -p1 < $PATCH_DIRECTORY/xnu/libsyscall-mig-flags.patch && \
-		sudo env DEPENDENCIES_DIR=$BUILD_DIR/dependencies RC_ProjectName=Libsyscall make install SDKROOT=macosx OBJROOT=$BUILD_DIR/Libsyscall.obj SYMROOT=$BUILD_DIR/Libsyscall.sym DSTROOT=$libsyscall_dstroot
+		sudo env DEPENDENCIES_DIR=$BUILD_DIR/dependencies RC_ProjectName=Libsyscall make install SDKROOT=iphoneos OBJROOT=$BUILD_DIR/Libsyscall.obj SYMROOT=$BUILD_DIR/Libsyscall.sym DSTROOT=$libsyscall_dstroot
 } || {
 	error "Failed to build Libsyscall"
 	exit 1
