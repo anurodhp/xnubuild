@@ -176,7 +176,7 @@ print "Installing XNU & LibSyscall headers"
 		patch -s -p1 < $PATCH_DIRECTORY/xnu/xnu_dependencies_dir.patch && \
 		patch -s -p1 < $PATCH_DIRECTORY/xnu/bsd-xcconfig.patch && \
 		patch -s -p1 < $PATCH_DIRECTORY/xnu/task_exc_guard_behavior.patch && \
-		DEPENDENCIES_DIR=$BUILD_DIR/dependencies make installhdrs LOGCOLORS=y SDKROOT=iphoneos ARCH_CONFIGS=ARM64 MACHINE_CONFIGS=BCM2837  ARCH_STRING_FOR_CURRENT_MACHINE_CONFIG=arm64 KERNEL_CONFIGS=RELEASE SRCROOT=$PWD OBJROOT=$BUILD_DIR/$XNU_VERSION.hdrs.obj SYMROOT=$BUILD_DIR/$XNU_VERSION.hdrs.sym DSTROOT=$BUILD_DIR/$XNU_VERSION.hdrs.dst && \
+		DEPENDENCIES_DIR=$BUILD_DIR/dependencies make installhdrs LOGCOLORS=y SDKROOT=iphoneos ARCH_CONFIGS=arm64 MACHINE_CONFIGS=BCM2837  ARCH_STRING_FOR_CURRENT_MACHINE_CONFIG=arm64 KERNEL_CONFIGS=RELEASE SRCROOT=$PWD OBJROOT=$BUILD_DIR/$XNU_VERSION.hdrs.obj SYMROOT=$BUILD_DIR/$XNU_VERSION.hdrs.sym DSTROOT=$BUILD_DIR/$XNU_VERSION.hdrs.dst && \
 	echo 	xcodebuild installhdrs -project libsyscall/Libsyscall.xcodeproj -sdk iphoneos SRCROOT=$PWD/libsyscall OBJROOT=$BUILD_DIR/$XNU_VERSION.hdrs.obj SYMROOT=$BUILD_DIR/$XNU_VERSION.hdrs.sym DSTROOT=$BUILD_DIR/$XNU_VERSION.hdrs.dst DEPENDENCIES_DIR=$BUILD_DIR/dependencies && \
 		ditto $BUILD_DIR/$XNU_VERSION.hdrs.dst $BUILD_DIR/dependencies
 } || {
@@ -208,7 +208,7 @@ print "Setting up libfirehose"
 	cd $SCRIPT_DIRECTORY/$LIBDISPATCH_VERSION && \
 		patch -s -p1 < $PATCH_DIRECTORY/libfirehose/header-paths.patch && \
 		patch -s -p1 < $PATCH_DIRECTORY/libfirehose/fix-build.patch && \
-		xcodebuild install -project libdispatch.xcodeproj -target libfirehose_kernel -sdk iphoneos ARCHS='ARM64' ENABLE_BITCODE=no SRCROOT=$PWD OBJROOT=$BUILD_DIR/$LIBDISPATCH_VERSION.obj SYMROOT=$BUILD_DIR/$LIBDISPATCH_VERSION.sym DSTROOT=$BUILD_DIR/$LIBDISPATCH_VERSION.dst DEPENDENCIES_DIR=$BUILD_DIR/dependencies && \
+		xcodebuild install -project libdispatch.xcodeproj -target libfirehose_kernel -sdk iphoneos ARCHS='arm64' ENABLE_BITCODE=no SRCROOT=$PWD OBJROOT=$BUILD_DIR/$LIBDISPATCH_VERSION.obj SYMROOT=$BUILD_DIR/$LIBDISPATCH_VERSION.sym DSTROOT=$BUILD_DIR/$LIBDISPATCH_VERSION.dst DEPENDENCIES_DIR=$BUILD_DIR/dependencies && \
 		ditto $BUILD_DIR/$LIBDISPATCH_VERSION.dst/usr/local $BUILD_DIR/dependencies/usr/local
 } || {
 	error "Failed to setup libfirehose"
